@@ -1,9 +1,23 @@
 from django.db import models
 
+class Estado(models.Model):
+    """Estados del ciclo de vida del pedido"""
+    codigo = models.CharField(max_length=20, unique=True, verbose_name="Código")
+    nombre = models.CharField(max_length=50, verbose_name="Nombre")
+    descripcion = models.TextField(blank=True, null=True, verbose_name="Descripción")
+    
+    class Meta:
+        verbose_name = "Estado de Pedido"
+        verbose_name_plural = "Estados de Pedido"
+        ordering = ['codigo']
+    
+    def __str__(self):
+        return self.nombre
+
 class Cliente(models.Model):
     """Información de quien nos compra"""
     razon_social = models.CharField(max_length=150, verbose_name="Razón Social")
-    cif = models.CharField(max_length=20, verbose_name="NIF/CIF")
+    cif = models.CharField(max_length=20, verbose_name="NIF/CIF", unique=True)
     nombre_contacto = models.CharField(max_length=100, verbose_name="Persona de contacto")
     email = models.EmailField()
     telefono = models.CharField(max_length=20)
@@ -11,17 +25,6 @@ class Cliente(models.Model):
     
     def __str__(self):
         return self.razon_social
-
-class Estado(models.Model):
-    """Estados del ciclo de vida del pedido (Pendiente, Pagado, Enviado...)"""
-    nombre = models.CharField(max_length=50)
-    orden = models.IntegerField(default=0, help_text="Para ordenar en listas (1, 2, 3...)")
-
-    class Meta:
-        ordering = ['orden']
-
-    def __str__(self):
-        return self.nombre
 
 class Producto(models.Model):
     """Catálogo de artículos"""

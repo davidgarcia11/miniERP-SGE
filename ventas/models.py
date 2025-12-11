@@ -1,13 +1,18 @@
 from django.db import models
 from core.models import Cliente, Producto, Estado
 
+def get_estado_borrador():
+    """Obtener el estado BORRADOR por defecto"""
+    estado, _ = Estado.objects.get_or_create(codigo='BORRADOR', defaults={'nombre': 'Borrador'})
+    return estado.id
+
 class Pedido(models.Model):
     """Cabecera del documento de venta"""
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     
     # Foreign Keys
     cliente = models.ForeignKey(Cliente, on_delete=models.PROTECT, related_name='pedidos')
-    estado = models.ForeignKey(Estado, on_delete=models.PROTECT)
+    estado = models.ForeignKey(Estado, on_delete=models.PROTECT, related_name='pedidos', default=get_estado_borrador)
     
     # Datos Snapshot (congelados en el tiempo)
     direccion_envio = models.CharField(max_length=250)
@@ -34,6 +39,14 @@ class LineaPedido(models.Model):
     # Datos Snapshot (Precio al momento de la venta, por si cambia el Producto después)
     precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
     descuento = models.DecimalField(max_digits=5, decimal_places=2, default=0, help_text="% Descuento")
+    
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(cantidad__gt=0),
+                name='cantidad_positiva'
+            )
+        ]
     
     def __str__(self):
         # Cambiamos esto para que muestre el NOMBRE del producto, no solo el SKU

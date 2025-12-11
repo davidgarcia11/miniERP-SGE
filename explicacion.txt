@@ -1,0 +1,1189 @@
+================================================================================
+                    EXPLICACIÓN COMPLETA DEL PROYECTO MINIERP
+                    Desde la instalación hasta cada línea de código
+================================================================================
+
+ÍNDICE:
+1. INSTALACIÓN Y CONFIGURACIÓN INICIAL
+2. ESTRUCTURA DEL PROYECTO Y POR QUÉ
+3. MODELOS DE DATOS - EXPLICACIÓN DETALLADA
+4. RELACIONES ENTRE MODELOS
+5. ADMIN DE DJANGO - CONFIGURACIÓN
+6. MIGRACIONES - QUÉ SON Y CÓMO FUNCIONAN
+7. MÉTODOS Y PROPIEDADES - EXPLICACIÓN LÍNEA POR LÍNEA
+
+================================================================================
+1. INSTALACIÓN Y CONFIGURACIÓN INICIAL
+================================================================================
+
+1.1 ¿QUÉ ES PYTHON Y POR QUÉ LO USAMOS?
+----------------------------------------
+Python es un lenguaje de programación que nos permite crear aplicaciones web.
+Django es un "framework" (marco de trabajo) construido sobre Python que nos
+proporciona herramientas para crear aplicaciones web de forma rápida y organizada.
+
+1.2 INSTALACIÓN DE PYTHON
+--------------------------
+En macOS, Python generalmente viene preinstalado. Verificamos con:
+    python3 --version
+
+Si no está instalado, puedes descargarlo desde python.org o usar Homebrew:
+    brew install python3
+
+¿POR QUÉ python3 y no python?
+- Python 2 está obsoleto desde 2020
+- Python 3 es la versión actual y recomendada
+- En muchos sistemas, "python" apunta a Python 2, por eso usamos "python3"
+
+1.3 ¿QUÉ ES UN ENTORNO VIRTUAL Y POR QUÉ LO NECESITAMOS?
+---------------------------------------------------------
+Un entorno virtual es como una "caja aislada" donde instalamos las librerías
+específicas de nuestro proyecto.
+
+IMAGINA ESTA SITUACIÓN:
+- Proyecto A necesita Django 3.2
+- Proyecto B necesita Django 4.2
+- Si instalas Django globalmente, solo puedes tener UNA versión
+
+SOLUCIÓN: Entornos virtuales
+- Cada proyecto tiene su propia "caja" (venv)
+- Puedes tener diferentes versiones de Django en cada proyecto
+- No contamina tu sistema operativo
+- Es la práctica profesional estándar
+
+COMANDO PARA CREAR UN ENTORNO VIRTUAL:
+    python3 -m venv venv
+
+DESGLOSE DEL COMANDO:
+- python3: Ejecuta Python 3
+- -m venv: Usa el módulo "venv" (virtual environment)
+- venv: Nombre de la carpeta que se creará (puede ser cualquier nombre)
+
+¿QUÉ CREA ESTE COMANDO?
+- Una carpeta llamada "venv" con:
+  * bin/: Scripts ejecutables (python, pip, etc.)
+  * lib/: Librerías instaladas (Django, etc.)
+  * include/: Headers de C (para compilar extensiones)
+  * pyvenv.cfg: Configuración del entorno virtual
+
+1.4 ACTIVAR EL ENTORNO VIRTUAL
+-------------------------------
+En macOS/Linux:
+    source venv/bin/activate
+
+¿QUÉ HACE ESTE COMANDO?
+- Cambia tu "PATH" (ruta de búsqueda) para que cuando escribas "python",
+  use el Python del entorno virtual, no el del sistema
+- Agrega "(venv)" al inicio de tu terminal para recordarte que está activo
+
+VERIFICACIÓN:
+    which python3
+    # Debería mostrar: /ruta/a/tu/proyecto/venv/bin/python3
+
+1.5 INSTALACIÓN DE DJANGO
+--------------------------
+Con el entorno virtual activado:
+    pip install django==4.2.27
+
+DESGLOSE:
+- pip: Gestor de paquetes de Python (como "npm" para Node.js o "composer" para PHP)
+- install: Comando para instalar
+- django==4.2.27: Nombre del paquete y versión específica
+
+¿POR QUÉ UNA VERSIÓN ESPECÍFICA?
+- Garantiza que todos los desarrolladores usen la misma versión
+- Evita problemas de compatibilidad
+- Es una buena práctica profesional
+
+1.6 ARCHIVO requirements.txt
+-----------------------------
+Después de instalar Django, guardamos las dependencias:
+    pip freeze > requirements.txt
+
+¿QUÉ ES requirements.txt?
+- Lista TODAS las librerías instaladas y sus versiones exactas
+- Permite recrear el entorno en cualquier momento
+- Otros desarrolladores pueden instalar exactamente lo mismo
+
+CONTENIDO TÍPICO:
+    Django==4.2.27
+    asgiref==3.11.0
+    sqlparse==0.5.4
+    typing_extensions==4.15.0
+
+Para instalar desde requirements.txt:
+    pip install -r requirements.txt
+
+================================================================================
+2. ESTRUCTURA DEL PROYECTO Y POR QUÉ
+================================================================================
+
+2.1 CREAR EL PROYECTO DJANGO
+------------------------------
+    django-admin startproject erp .
+
+DESGLOSE DEL COMANDO:
+- django-admin: Herramienta de línea de comandos de Django
+- startproject: Crea un nuevo proyecto Django
+- erp: Nombre del proyecto (puede ser cualquier nombre)
+- . (punto): Crea el proyecto en el directorio actual (sin crear subcarpeta)
+
+¿QUÉ CREA ESTE COMANDO?
+miniERP-SGE/
+├── manage.py          # Script principal para gestionar el proyecto
+├── erp/               # Carpeta del proyecto (configuración principal)
+│   ├── __init__.py   # Hace que Python trate esta carpeta como un módulo
+│   ├── settings.py   # CONFIGURACIÓN DEL PROYECTO (base de datos, apps, etc.)
+│   ├── urls.py        # RUTAS URL (qué URL va a qué vista)
+│   ├── wsgi.py        # Para producción (servidor web)
+│   └── asgi.py        # Para producción (servidor asíncrono)
+└── db.sqlite3         # Base de datos (se crea después de las migraciones)
+
+2.2 CREAR LAS APLICACIONES (APPS)
+----------------------------------
+Django organiza el código en "aplicaciones" (apps). Cada app tiene un propósito
+específico. En nuestro caso:
+
+    python manage.py startapp core
+    python manage.py startapp ventas
+
+¿POR QUÉ DOS APPS SEPARADAS?
+- core: Modelos MAESTROS (datos de referencia que cambian poco)
+  * Cliente, Producto, Estado
+  * Son como "catálogos" o "tablas de referencia"
+  
+- ventas: Modelos TRANSACCIONALES (operaciones de negocio)
+  * Pedido, LineaPedido
+  * Son las "operaciones" que se realizan con los datos maestros
+
+ESTRUCTURA DE CADA APP:
+core/
+├── __init__.py        # Hace que sea un módulo Python
+├── admin.py          # Configuración del panel de administración
+├── apps.py           # Configuración de la app
+├── models.py         # MODELOS DE DATOS (las "tablas" de la BD)
+├── tests.py          # Pruebas unitarias
+└── views.py          # Vistas (lógica de negocio, por ahora vacío)
+    migrations/       # Historial de cambios en la base de datos
+    └── __init__.py
+
+2.3 REGISTRAR LAS APPS EN settings.py
+---------------------------------------
+En erp/settings.py, encontramos INSTALLED_APPS:
+
+INSTALLED_APPS = [
+    'django.contrib.admin',      # Panel de administración
+    'django.contrib.auth',       # Sistema de autenticación
+    'django.contrib.contenttypes', # Sistema de tipos de contenido
+    'django.contrib.sessions',   # Manejo de sesiones
+    'django.contrib.messages',   # Sistema de mensajes
+    'django.contrib.staticfiles', # Archivos estáticos (CSS, JS, imágenes)
+    'ventas',                    # NUESTRA APP de ventas
+    'core',                      # NUESTRA APP de datos maestros
+]
+
+¿POR QUÉ REGISTRAR LAS APPS?
+- Django necesita saber qué apps están disponibles
+- Solo las apps registradas pueden usar las características de Django
+- El orden importa: las apps que dependen de otras deben ir después
+
+================================================================================
+3. MODELOS DE DATOS - EXPLICACIÓN DETALLADA
+================================================================================
+
+3.1 ¿QUÉ ES UN MODELO?
+-----------------------
+Un modelo en Django es una clase de Python que representa una TABLA en la
+base de datos. Django convierte automáticamente las clases en tablas SQL.
+
+ANALOGÍA:
+- Clase Python = Tabla en Base de Datos
+- Atributo de clase = Columna en la tabla
+- Instancia de clase = Fila en la tabla
+
+3.2 MODELO: Estado (core/models.py)
+-------------------------------------
+Este es un modelo MAESTRO que almacena los estados posibles de un pedido.
+
+class Estado(models.Model):
+    """Estados del ciclo de vida del pedido"""
+    
+    # Campo código: Identificador único del estado
+    codigo = models.CharField(max_length=20, unique=True, verbose_name="Código")
+    # max_length=20: Máximo 20 caracteres
+    # unique=True: NO puede haber dos estados con el mismo código
+    # verbose_name: Nombre bonito para mostrar en el admin
+    
+    # Campo nombre: Nombre legible del estado
+    nombre = models.CharField(max_length=50, verbose_name="Nombre")
+    
+    # Campo descripción: Texto largo opcional
+    descripcion = models.TextField(blank=True, null=True, verbose_name="Descripción")
+    # blank=True: Puede estar vacío en formularios
+    # null=True: Puede ser NULL en la base de datos
+    
+    class Meta:
+        # Meta es una clase especial para configuraciones del modelo
+        verbose_name = "Estado de Pedido"
+        verbose_name_plural = "Estados de Pedido"  # Cómo se muestra en plural
+        ordering = ['codigo']  # Orden por defecto: alfabético por código
+    
+    def __str__(self):
+        # Este método define cómo se muestra el objeto cuando se convierte a string
+        # Ejemplo: print(estado) mostrará "Borrador" en lugar de "Estado object (1)"
+        return self.nombre
+
+EJEMPLO DE DATOS:
+id | codigo      | nombre      | descripcion
+---|-------------|-------------|------------------
+1  | BORRADOR    | Borrador    | Pedido en borrador
+2  | CONFIRMADO  | Confirmado  | Pedido confirmado
+3  | FACTURADO   | Facturado   | Pedido facturado
+4  | COBRADO     | Cobrado     | Pedido cobrado
+
+3.3 MODELO: Cliente (core/models.py)
+--------------------------------------
+Modelo MAESTRO que almacena información de los clientes.
+
+class Cliente(models.Model):
+    """Información de quien nos compra"""
+    
+    razon_social = models.CharField(max_length=150, verbose_name="Razón Social")
+    # Nombre legal de la empresa
+    
+    cif = models.CharField(max_length=20, verbose_name="NIF/CIF", unique=True)
+    # unique=True: No puede haber dos clientes con el mismo CIF
+    # Esto es importante porque el CIF es único por empresa
+    
+    nombre_contacto = models.CharField(max_length=100, verbose_name="Persona de contacto")
+    # Nombre de la persona con quien hablamos
+    
+    email = models.EmailField()
+    # EmailField valida automáticamente que sea un email válido
+    
+    telefono = models.CharField(max_length=20)
+    # Número de teléfono
+    
+    direccion = models.CharField(max_length=250, verbose_name="Dirección Fiscal")
+    # Dirección completa
+    
+    def __str__(self):
+        return self.razon_social
+    # Cuando mostramos un cliente, veremos su razón social
+
+EJEMPLO DE DATOS:
+id | razon_social    | cif        | nombre_contacto | email
+---|-----------------|------------|-----------------|------------------
+1  | Empresa ABC S.L.| B12345678  | Juan Pérez      | juan@abc.com
+2  | XYZ S.A.        | A87654321  | María García    | maria@xyz.com
+
+3.4 MODELO: Producto (core/models.py)
+---------------------------------------
+Modelo MAESTRO del catálogo de productos.
+
+class Producto(models.Model):
+    """Catálogo de artículos"""
+    
+    sku = models.CharField(max_length=20, unique=True, verbose_name="SKU / Ref")
+    # SKU = Stock Keeping Unit (código único del producto)
+    # unique=True: No puede haber dos productos con el mismo SKU
+    
+    nombre = models.CharField(max_length=100)
+    # Nombre del producto
+    
+    descripcion = models.TextField(blank=True, null=True)
+    # TextField permite textos largos (a diferencia de CharField)
+    
+    # DATOS ECONÓMICOS
+    coste = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Coste Compra")
+    # DecimalField: Para números con decimales (dinero)
+    # max_digits=10: Máximo 10 dígitos en total
+    # decimal_places=2: 2 decimales (ej: 1234.56)
+    # default=0: Valor por defecto si no se especifica
+    
+    precio = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="PVP Venta")
+    # Precio de venta al público
+    
+    iva = models.IntegerField(default=21, choices=[(21, '21%'), (10, '10%'), (4, '4%'), (0, '0%')])
+    # choices: Limita los valores posibles
+    # Solo puede ser 21, 10, 4 o 0
+    # En el admin aparecerá como un desplegable
+    
+    # STOCK
+    stock = models.IntegerField(default=0)
+    # Cantidad disponible en almacén
+    
+    activo = models.BooleanField(default=True)
+    # True = producto activo, False = producto desactivado (no se muestra)
+    
+    def __str__(self):
+        return f"{self.nombre} ({self.sku})"
+    # Ejemplo: "Laptop HP (LAP-001)"
+
+EJEMPLO DE DATOS:
+id | sku     | nombre      | precio  | iva | stock | activo
+---|---------|-------------|---------|-----|-------|--------
+1  | LAP-001 | Laptop HP   | 899.99  | 21  | 5     | True
+2  | MON-002 | Monitor 24" | 199.99  | 21  | 10    | True
+
+3.5 MODELO: Pedido (ventas/models.py)
+---------------------------------------
+Modelo TRANSACCIONAL que representa la cabecera de un pedido.
+
+FUNCIÓN AUXILIAR:
+def get_estado_borrador():
+    """Obtener el estado BORRADOR por defecto"""
+    estado, _ = Estado.objects.get_or_create(codigo='BORRADOR', defaults={'nombre': 'Borrador'})
+    return estado.id
+
+EXPLICACIÓN:
+- get_or_create(): Busca un objeto, si no existe lo crea
+- codigo='BORRADOR': Busca por código
+- defaults={'nombre': 'Borrador'}: Si lo crea, usa estos valores
+- _ (guion bajo): Ignora el segundo valor (True/False que indica si se creó)
+- return estado.id: Devuelve el ID del estado (necesario para default)
+
+class Pedido(models.Model):
+    """Cabecera del documento de venta"""
+    
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    # auto_now_add=True: Se establece automáticamente cuando se crea el registro
+    # No se puede modificar después
+    
+    # FOREIGN KEYS (Claves Foráneas)
+    cliente = models.ForeignKey(Cliente, on_delete=models.PROTECT, related_name='pedidos')
+    # ForeignKey: Relación con otro modelo
+    # Cliente: El modelo relacionado
+    # on_delete=models.PROTECT: Si intentas borrar un Cliente que tiene pedidos,
+    #   Django lanzará un error (PROTECT = proteger)
+    # related_name='pedidos': Desde un Cliente, puedes acceder a sus pedidos con:
+    #   cliente.pedidos.all()
+    
+    estado = models.ForeignKey(Estado, on_delete=models.PROTECT, related_name='pedidos', default=get_estado_borrador)
+    # default=get_estado_borrador: Función que se ejecuta para obtener el valor por defecto
+    # Cuando creas un pedido sin especificar estado, usa BORRADOR
+    
+    # DATOS SNAPSHOT (Datos "congelados" en el tiempo)
+    direccion_envio = models.CharField(max_length=250)
+    # ¿Por qué guardar la dirección aquí si el Cliente ya tiene dirección?
+    # Porque la dirección del cliente puede cambiar, pero queremos saber
+    # a dónde se envió ESTE pedido específico
+    
+    observaciones = models.TextField(blank=True)
+    # blank=True: Puede estar vacío en formularios
+    
+    def __str__(self):
+        return f"Pedido #{self.id} - {self.cliente}"
+    # Ejemplo: "Pedido #1 - Empresa ABC S.L."
+    
+    @property
+    def total(self):
+        # @property: Hace que puedas llamar pedido.total sin paréntesis
+        # Es como un atributo, pero se calcula cada vez
+        # Suma el total de todas las lineas hijas
+        return sum(linea.subtotal for linea in self.lineas.all())
+        # self.lineas.all(): Accede a todas las LineaPedido relacionadas
+        # (gracias a related_name='lineas' en LineaPedido)
+        # sum(): Suma todos los subtotales
+
+EJEMPLO DE DATOS:
+id | cliente_id | estado_id | fecha_creacion      | direccion_envio
+---|------------|-----------|---------------------|------------------
+1  | 1          | 1         | 2025-12-11 10:00:00| Calle Mayor 1
+2  | 2          | 2         | 2025-12-11 11:00:00| Avenida Principal 5
+
+3.6 MODELO: LineaPedido (ventas/models.py)
+--------------------------------------------
+Modelo TRANSACCIONAL que representa cada línea (producto) de un pedido.
+
+class LineaPedido(models.Model):
+    """Filas de detalle del pedido"""
+    
+    # FOREIGN KEYS
+    pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE, related_name='lineas')
+    # on_delete=models.CASCADE: Si borras un Pedido, se borran TODAS sus líneas
+    # Esto tiene sentido: sin pedido, las líneas no tienen sentido
+    
+    producto = models.ForeignKey(Producto, on_delete=models.PROTECT)
+    # PROTECT: No puedes borrar un Producto si está en algún pedido
+    # Esto protege la integridad histórica
+    
+    # DATOS DE LA LÍNEA
+    cantidad = models.PositiveIntegerField(default=1)
+    # PositiveIntegerField: Solo números enteros positivos (1, 2, 3...)
+    # No permite 0 ni negativos
+    
+    # DATOS SNAPSHOT
+    precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
+    # ¿Por qué guardar el precio aquí si el Producto ya tiene precio?
+    # Porque el precio del producto puede cambiar, pero queremos saber
+    # cuánto costaba cuando se hizo ESTE pedido
+    
+    descuento = models.DecimalField(max_digits=5, decimal_places=2, default=0, help_text="% Descuento")
+    # Porcentaje de descuento aplicado a esta línea
+    # help_text: Texto de ayuda que aparece en el admin
+    
+    class Meta:
+        # RESTRICCIONES A NIVEL DE BASE DE DATOS
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(cantidad__gt=0),
+                name='cantidad_positiva'
+            )
+        ]
+        # CheckConstraint: La base de datos verifica que cantidad > 0
+        # Aunque PositiveIntegerField ya evita negativos, esto es una capa extra
+        # de seguridad a nivel de base de datos
+    
+    def __str__(self):
+        return f"{self.cantidad}x {self.producto.nombre} ({self.producto.sku})"
+    # Ejemplo: "2x Laptop HP (LAP-001)"
+    
+    @property
+    def subtotal(self):
+        # Calcula el subtotal de esta línea
+        bruto = self.cantidad * self.precio_unitario
+        # Ejemplo: 2 * 899.99 = 1799.98
+        
+        neto = bruto * (1 - (self.descuento / 100))
+        # Aplica el descuento
+        # Ejemplo: 1799.98 * (1 - (10/100)) = 1799.98 * 0.9 = 1619.98
+        
+        return neto
+
+EJEMPLO DE DATOS:
+id | pedido_id | producto_id | cantidad | precio_unitario | descuento
+---|-----------|-------------|----------|-----------------|----------
+1  | 1         | 1           | 2        | 899.99          | 0
+2  | 1         | 2           | 1        | 199.99          | 10
+
+================================================================================
+4. RELACIONES ENTRE MODELOS
+================================================================================
+
+4.1 TIPOS DE RELACIONES
+------------------------
+En bases de datos relacionales hay varios tipos de relaciones:
+
+1. UNO A MUCHOS (1:N) - ForeignKey
+   - Un Cliente tiene muchos Pedidos
+   - Un Pedido tiene muchas LineaPedido
+   - Un Producto está en muchas LineaPedido
+
+2. MUCHOS A MUCHOS (N:N) - ManyToManyField
+   - No usamos en este proyecto
+
+3. UNO A UNO (1:1) - OneToOneField
+   - No usamos en este proyecto
+
+4.2 RELACIÓN: Cliente → Pedido (1:N)
+--------------------------------------
+Un Cliente puede tener muchos Pedidos, pero un Pedido pertenece a UN solo Cliente.
+
+CÓDIGO:
+    cliente = models.ForeignKey(Cliente, on_delete=models.PROTECT, related_name='pedidos')
+
+DESDE PYTHON:
+    # Crear un pedido para un cliente
+    cliente = Cliente.objects.get(id=1)
+    pedido = Pedido.objects.create(cliente=cliente, ...)
+    
+    # Acceder a todos los pedidos de un cliente
+    pedidos_del_cliente = cliente.pedidos.all()
+    # Gracias a related_name='pedidos'
+    
+    # Acceder al cliente de un pedido
+    cliente_del_pedido = pedido.cliente
+
+EN LA BASE DE DATOS:
+Tabla Cliente:
+id | razon_social
+---|-------------
+1  | Empresa ABC
+
+Tabla Pedido:
+id | cliente_id | ...
+---|------------|----
+1  | 1          | ...
+2  | 1          | ...
+3  | 1          | ...
+
+El campo cliente_id es la "clave foránea" que apunta al Cliente.
+
+4.3 RELACIÓN: Pedido → LineaPedido (1:N)
+------------------------------------------
+Un Pedido tiene muchas LineaPedido, pero una LineaPedido pertenece a UN solo Pedido.
+
+CÓDIGO:
+    pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE, related_name='lineas')
+
+DESDE PYTHON:
+    # Crear una línea para un pedido
+    pedido = Pedido.objects.get(id=1)
+    linea = LineaPedido.objects.create(pedido=pedido, producto=..., ...)
+    
+    # Acceder a todas las líneas de un pedido
+    lineas_del_pedido = pedido.lineas.all()
+    # Gracias a related_name='lineas'
+    
+    # Calcular el total del pedido
+    total = pedido.total  # Usa la propiedad que suma todas las líneas
+
+4.4 RELACIÓN: Producto → LineaPedido (1:N)
+------------------------------------------
+Un Producto puede estar en muchas LineaPedido, pero una LineaPedido referencia
+a UN solo Producto.
+
+CÓDIGO:
+    producto = models.ForeignKey(Producto, on_delete=models.PROTECT)
+
+DESDE PYTHON:
+    # Crear una línea con un producto
+    producto = Producto.objects.get(sku='LAP-001')
+    linea = LineaPedido.objects.create(pedido=..., producto=producto, ...)
+    
+    # Acceder al producto de una línea
+    producto_de_la_linea = linea.producto
+
+4.5 RELACIÓN: Estado → Pedido (N:1)
+------------------------------------
+Muchos Pedidos pueden tener el mismo Estado, pero un Pedido tiene UN solo Estado.
+
+CÓDIGO:
+    estado = models.ForeignKey(Estado, on_delete=models.PROTECT, related_name='pedidos')
+
+DESDE PYTHON:
+    # Crear un pedido con un estado
+    estado = Estado.objects.get(codigo='BORRADOR')
+    pedido = Pedido.objects.create(cliente=..., estado=estado, ...)
+    
+    # Acceder a todos los pedidos con un estado
+    pedidos_borrador = estado.pedidos.all()
+    # Gracias a related_name='pedidos'
+
+4.6 POLÍTICAS ON_DELETE
+------------------------
+Cuando borras un objeto relacionado, ¿qué pasa con los objetos que lo referencian?
+
+1. PROTECT (Proteger)
+   - Ejemplo: Cliente → Pedido
+   - Si intentas borrar un Cliente que tiene pedidos, Django lanza un error
+   - RAZÓN: No queremos perder el historial de pedidos
+   
+2. CASCADE (Cascada)
+   - Ejemplo: Pedido → LineaPedido
+   - Si borras un Pedido, se borran TODAS sus líneas automáticamente
+   - RAZÓN: Las líneas no tienen sentido sin el pedido
+   
+3. SET_NULL (Establecer NULL)
+   - No usamos en este proyecto
+   - Establece el campo a NULL cuando se borra el objeto relacionado
+   
+4. SET_DEFAULT (Establecer por defecto)
+   - No usamos en este proyecto
+   - Establece el campo a su valor por defecto
+
+================================================================================
+5. ADMIN DE DJANGO - CONFIGURACIÓN
+================================================================================
+
+5.1 ¿QUÉ ES EL ADMIN DE DJANGO?
+---------------------------------
+El admin es un panel de administración automático que Django genera basándose
+en tus modelos. Te permite crear, editar y borrar registros sin escribir código.
+
+ACCESO:
+    http://localhost:8000/admin
+
+5.2 REGISTRAR MODELOS EN EL ADMIN
+----------------------------------
+Para que un modelo aparezca en el admin, debes registrarlo en admin.py
+
+REGISTRO BÁSICO:
+    from django.contrib import admin
+    from .models import Cliente
+    
+    admin.site.register(Cliente)
+    # Esto crea una interfaz básica para gestionar Clientes
+
+REGISTRO CON CONFIGURACIÓN:
+    from django.contrib import admin
+    from .models import Producto
+    
+    class ProductoAdmin(admin.ModelAdmin):
+        search_fields = ['nombre']
+        # Permite buscar productos por nombre
+    
+    admin.site.register(Producto, ProductoAdmin)
+    # Registra el modelo con la configuración personalizada
+
+5.3 CONFIGURACIÓN DE core/admin.py
+-----------------------------------
+from django.contrib import admin
+from .models import Cliente, Producto, Estado
+
+class ProductoAdmin(admin.ModelAdmin):
+    search_fields = ['nombre']
+    # search_fields: Campos por los que se puede buscar
+    # En el admin aparecerá una caja de búsqueda
+    # Si escribes "Laptop", encontrará productos con "Laptop" en el nombre
+
+admin.site.register(Cliente)
+# Cliente sin configuración especial (usa la configuración por defecto)
+
+admin.site.register(Producto, ProductoAdmin)
+# Producto con configuración personalizada
+
+admin.site.register(Estado)
+# Estado sin configuración especial
+
+5.4 CONFIGURACIÓN DE ventas/admin.py
+-------------------------------------
+
+INLINE (Editar líneas dentro del pedido):
+class LineaPedidoInline(admin.TabularInline):
+    model = LineaPedido
+    extra = 1
+    # model: El modelo que se edita "dentro" de otro
+    # extra: Número de líneas vacías que se muestran por defecto
+    # TabularInline: Muestra las líneas en formato tabla
+
+EXPLICACIÓN DE INLINE:
+- Normalmente, para agregar una LineaPedido, tendrías que:
+  1. Ir a "Líneas de Pedido"
+  2. Crear nueva línea
+  3. Seleccionar el pedido
+  
+- Con Inline, cuando editas un Pedido, ves directamente sus líneas
+  y puedes agregar/editar/borrar desde ahí
+
+CONFIGURACIÓN DEL PEDIDO:
+class PedidoAdmin(admin.ModelAdmin):
+    list_display = ('id', 'cliente', 'fecha_creacion', 'estado', 'total_calculado')
+    # list_display: Columnas que se muestran en la lista de pedidos
+    # En lugar de solo ver "Pedido object (1)", ves información útil
+    
+    list_filter = ('estado', 'fecha_creacion')
+    # list_filter: Filtros en el lado derecho
+    # Puedes filtrar por estado o por fecha
+    
+    search_fields = ('cliente__razon_social', 'id')
+    # search_fields: Campos por los que buscar
+    # cliente__razon_social: Accede al campo razon_social del Cliente relacionado
+    # El doble guion bajo (__) permite acceder a campos de relaciones
+    
+    inlines = [LineaPedidoInline]
+    # inlines: Modelos que se editan dentro de este modelo
+    # Cuando editas un Pedido, ves sus LineaPedido directamente
+    
+    def total_calculado(self, obj):
+        # Método personalizado para mostrar el total
+        # obj: Es el objeto Pedido actual
+        return f"{obj.total} €"
+        # obj.total llama a la propiedad @property total del modelo
+        # que suma todos los subtotales de las líneas
+    
+    total_calculado.short_description = "Total"
+    # short_description: Nombre de la columna en el admin
+    # Sin esto, la columna se llamaría "Total Calculado"
+
+CONFIGURACIÓN DE LINEAPEDIDO:
+class LineaPedidoAdmin(admin.ModelAdmin):
+    list_display = ('id', 'pedido', 'producto', 'cantidad', 'precio_unitario', 'descuento', 'subtotal_calculado')
+    # Muestra información útil de cada línea
+    
+    list_filter = ('pedido__estado', 'producto')
+    # Filtra por estado del pedido o por producto
+    # pedido__estado: Accede al estado del pedido relacionado
+    
+    search_fields = ('pedido__id', 'producto__nombre', 'producto__sku')
+    # Busca por ID del pedido, nombre del producto o SKU
+    
+    def subtotal_calculado(self, obj):
+        return f"{obj.subtotal:.2f} €"
+        # obj.subtotal llama a la propiedad @property subtotal
+        # :.2f formatea el número con 2 decimales
+    
+    subtotal_calculado.short_description = "Subtotal"
+
+REGISTRO:
+admin.site.register(Pedido, PedidoAdmin)
+admin.site.register(LineaPedido, LineaPedidoAdmin)
+
+¿POR QUÉ REGISTRAR LINEAPEDIDO SI YA ESTÁ COMO INLINE?
+- El Inline solo aparece cuando editas un Pedido
+- Registrar LineaPedido por separado permite:
+  * Ver todas las líneas de todos los pedidos
+  * Buscar líneas específicas
+  * Editar líneas directamente sin entrar al pedido
+
+================================================================================
+6. MIGRACIONES - QUÉ SON Y CÓMO FUNCIONAN
+================================================================================
+
+6.1 ¿QUÉ ES UNA MIGRACIÓN?
+---------------------------
+Una migración es un archivo que describe cambios en la estructura de la base
+de datos. Django las crea automáticamente cuando cambias tus modelos.
+
+ANALOGÍA:
+- Modelos = Planos de una casa
+- Migraciones = Instrucciones para construir/modificar la casa
+- Base de datos = La casa construida
+
+6.2 CREAR MIGRACIONES
+----------------------
+    python manage.py makemigrations
+
+¿QUÉ HACE ESTE COMANDO?
+1. Compara tus modelos con el estado actual de las migraciones
+2. Detecta cambios (nuevos campos, modelos, relaciones, etc.)
+3. Crea archivos Python en migrations/ que describen esos cambios
+4. NO modifica la base de datos todavía
+
+EJEMPLO DE MIGRACIÓN GENERADA:
+# Generated by Django 4.2.27 on 2025-12-11 18:50
+
+from django.db import migrations, models
+import django.db.models.deletion
+
+class Migration(migrations.Migration):
+    initial = True
+    
+    dependencies = [
+        ('core', '0001_initial'),  # Esta migración depende de otra
+    ]
+    
+    operations = [
+        migrations.CreateModel(
+            name='Pedido',
+            fields=[
+                ('id', models.BigAutoField(...)),
+                ('fecha_creacion', models.DateTimeField(...)),
+                # ... más campos
+            ],
+        ),
+    ]
+
+6.3 APLICAR MIGRACIONES
+-----------------------
+    python manage.py migrate
+
+¿QUÉ HACE ESTE COMANDO?
+1. Lee todas las migraciones pendientes
+2. Las ejecuta en orden (respetando las dependencias)
+3. Modifica la base de datos según las instrucciones
+4. Registra qué migraciones se han aplicado
+
+EJEMPLO DE SALIDA:
+Operations to perform:
+  Apply all migrations: admin, auth, contenttypes, core, sessions, ventas
+Running migrations:
+  Applying contenttypes.0001_initial... OK
+  Applying auth.0001_initial... OK
+  Applying core.0001_initial... OK
+  Applying ventas.0001_initial... OK
+
+6.4 MIGRACIONES DE DATOS
+-------------------------
+A veces necesitas migrar datos además de la estructura. Por ejemplo, cuando
+cambiamos Pedido.estado de CharField a ForeignKey.
+
+EJEMPLO (core/migrations/0002_estado.py):
+def crear_estados_iniciales(apps, schema_editor):
+    """Crear los estados iniciales del pedido"""
+    Estado = apps.get_model('core', 'Estado')
+    # apps.get_model(): Obtiene el modelo en el estado de la migración
+    # No uses el modelo directamente porque puede haber cambiado
+    
+    estados = [
+        {'codigo': 'BORRADOR', 'nombre': 'Borrador', ...},
+        {'codigo': 'CONFIRMADO', 'nombre': 'Confirmado', ...},
+        # ...
+    ]
+    
+    for estado_data in estados:
+        Estado.objects.get_or_create(**estado_data)
+        # Crea el estado si no existe
+
+class Migration(migrations.Migration):
+    operations = [
+        migrations.CreateModel(...),  # Primero crea la tabla
+        migrations.RunPython(crear_estados_iniciales),  # Luego crea los datos
+    ]
+
+6.5 MIGRACIÓN COMPLEJA: Cambiar CharField a ForeignKey
+-------------------------------------------------------
+Cuando cambiamos Pedido.estado de CharField a ForeignKey, necesitamos:
+
+1. Crear la tabla Estado (ya hecho)
+2. Crear los estados iniciales (ya hecho)
+3. Agregar el nuevo campo ForeignKey (temporalmente nullable)
+4. Migrar los datos antiguos a los nuevos
+5. Eliminar el campo antiguo
+6. Hacer el nuevo campo no-nullable
+
+CÓDIGO (ventas/migrations/0002_alter_pedido_estado.py):
+def migrar_estados_a_foreignkey(apps, schema_editor):
+    """Migrar los valores de CharField a ForeignKey"""
+    Pedido = apps.get_model('ventas', 'Pedido')
+    Estado = apps.get_model('core', 'Estado')
+    
+    for pedido in Pedido.objects.all():
+        codigo_antiguo = pedido.estado  # El CharField antiguo
+        estado_nuevo = Estado.objects.get(codigo=codigo_antiguo)
+        pedido.estado_fk = estado_nuevo  # El nuevo ForeignKey
+        pedido.save()
+
+class Migration(migrations.Migration):
+    operations = [
+        # 1. Agregar campo temporal nullable
+        migrations.AddField(
+            model_name='pedido',
+            name='estado_fk',
+            field=models.ForeignKey(..., null=True),
+        ),
+        # 2. Migrar datos
+        migrations.RunPython(migrar_estados_a_foreignkey),
+        # 3. Eliminar campo antiguo
+        migrations.RemoveField(model_name='pedido', name='estado'),
+        # 4. Renombrar campo nuevo
+        migrations.RenameField(model_name='pedido', old_name='estado_fk', new_name='estado'),
+        # 5. Hacer no-nullable
+        migrations.AlterField(model_name='pedido', name='estado', ...),
+    ]
+
+================================================================================
+7. MÉTODOS Y PROPIEDADES - EXPLICACIÓN LÍNEA POR LÍNEA
+================================================================================
+
+7.1 MÉTODO __str__()
+---------------------
+Este método define cómo se muestra un objeto cuando se convierte a string.
+
+EJEMPLO EN Estado:
+    def __str__(self):
+        return self.nombre
+
+SIN __str__:
+    print(estado)  # Muestra: Estado object (1)
+
+CON __str__:
+    print(estado)  # Muestra: "Borrador"
+
+¿DÓNDE SE USA?
+- En el admin de Django (lista de objetos)
+- En la shell de Python
+- En los formularios
+- En los templates (si los usas)
+
+EJEMPLO EN Cliente:
+    def __str__(self):
+        return self.razon_social
+    
+    # Muestra: "Empresa ABC S.L."
+
+EJEMPLO EN Producto:
+    def __str__(self):
+        return f"{self.nombre} ({self.sku})"
+    
+    # f-string: Formatea strings de forma moderna
+    # Ejemplo: "Laptop HP (LAP-001)"
+
+EJEMPLO EN Pedido:
+    def __str__(self):
+        return f"Pedido #{self.id} - {self.cliente}"
+    
+    # self.id: ID automático del pedido
+    # self.cliente: El objeto Cliente relacionado
+    # Cuando se convierte a string, usa su __str__
+    # Ejemplo: "Pedido #1 - Empresa ABC S.L."
+
+7.2 PROPIEDADES (@property)
+------------------------------
+Las propiedades son métodos que se comportan como atributos (sin paréntesis).
+
+EJEMPLO EN LineaPedido:
+    @property
+    def subtotal(self):
+        bruto = self.cantidad * self.precio_unitario
+        neto = bruto * (1 - (self.descuento / 100))
+        return neto
+
+EXPLICACIÓN LÍNEA POR LÍNEA:
+1. @property: Decorador que convierte el método en propiedad
+2. def subtotal(self): Define el método
+3. bruto = ...: Calcula el precio sin descuento
+   - Ejemplo: 2 * 899.99 = 1799.98
+4. neto = bruto * (1 - (self.descuento / 100)):
+   - Si descuento = 10%
+   - neto = 1799.98 * (1 - 0.10) = 1799.98 * 0.90 = 1619.98
+5. return neto: Devuelve el resultado
+
+USO:
+    linea = LineaPedido.objects.get(id=1)
+    print(linea.subtotal)  # Sin paréntesis, como si fuera un atributo
+    # Muestra: 1619.98
+
+¿POR QUÉ NO ES UN CAMPO EN LA BD?
+- Porque se calcula dinámicamente
+- Si cambias cantidad, precio o descuento, el subtotal cambia automáticamente
+- No necesitas actualizar nada manualmente
+
+EJEMPLO EN Pedido:
+    @property
+    def total(self):
+        return sum(linea.subtotal for linea in self.lineas.all())
+
+EXPLICACIÓN:
+1. self.lineas.all(): Obtiene todas las LineaPedido relacionadas
+   - Gracias a related_name='lineas' en LineaPedido
+2. for linea in ...: Itera sobre cada línea
+3. linea.subtotal: Llama a la propiedad subtotal de cada línea
+4. sum(...): Suma todos los subtotales
+5. return: Devuelve el total
+
+EJEMPLO DE CÁLCULO:
+Pedido #1 tiene:
+- Línea 1: 2x Laptop (899.99) = 1799.98
+- Línea 2: 1x Monitor (199.99) con 10% descuento = 179.99
+Total = 1799.98 + 179.99 = 1979.97
+
+USO:
+    pedido = Pedido.objects.get(id=1)
+    print(pedido.total)  # Muestra: 1979.97
+
+7.3 FUNCIÓN get_estado_borrador()
+----------------------------------
+Esta función se usa como valor por defecto para el campo estado en Pedido.
+
+CÓDIGO:
+    def get_estado_borrador():
+        estado, _ = Estado.objects.get_or_create(
+            codigo='BORRADOR',
+            defaults={'nombre': 'Borrador'}
+        )
+        return estado.id
+
+EXPLICACIÓN LÍNEA POR LÍNEA:
+1. def get_estado_borrador(): Define la función
+   - No tiene parámetros (self) porque no es un método de clase
+2. estado, _ = Estado.objects.get_or_create(...):
+   - get_or_create(): Busca un objeto, si no existe lo crea
+   - Devuelve una tupla: (objeto, True/False)
+   - estado: El objeto Estado (creado o encontrado)
+   - _ (guion bajo): Ignora el segundo valor (True si se creó, False si existía)
+3. codigo='BORRADOR': Busca por código 'BORRADOR'
+4. defaults={'nombre': 'Borrador'}: Si lo crea, usa estos valores
+5. return estado.id: Devuelve el ID del estado
+
+¿POR QUÉ SE NECESITA?
+- Django necesita un valor por defecto para el campo estado
+- No podemos usar directamente Estado.objects.get() porque puede fallar
+- get_or_create() garantiza que el estado existe
+
+USO EN EL MODELO:
+    estado = models.ForeignKey(
+        Estado,
+        ...,
+        default=get_estado_borrador
+    )
+    # Cuando creas un Pedido sin especificar estado, usa BORRADOR
+
+7.4 CLASE Meta
+---------------
+La clase Meta dentro de un modelo contiene metadatos (información sobre el modelo).
+
+EJEMPLO EN Estado:
+    class Meta:
+        verbose_name = "Estado de Pedido"
+        verbose_name_plural = "Estados de Pedido"
+        ordering = ['codigo']
+
+EXPLICACIÓN:
+1. verbose_name: Nombre singular para mostrar en el admin
+   - Sin esto: "Estado"
+   - Con esto: "Estado de Pedido"
+2. verbose_name_plural: Nombre plural
+   - Sin esto: "Estados"
+   - Con esto: "Estados de Pedido"
+3. ordering = ['codigo']: Orden por defecto
+   - Cuando haces Estado.objects.all(), los resultados vienen ordenados por código
+   - ['codigo']: Orden ascendente
+   - ['-codigo']: Orden descendente
+
+EJEMPLO EN LineaPedido:
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(cantidad__gt=0),
+                name='cantidad_positiva'
+            )
+        ]
+
+EXPLICACIÓN:
+1. constraints: Restricciones a nivel de base de datos
+2. CheckConstraint: Verifica una condición
+3. check=models.Q(cantidad__gt=0):
+   - models.Q(): Construye una consulta
+   - cantidad__gt=0: cantidad mayor que 0
+   - __gt es un "lookup" de Django (greater than)
+4. name='cantidad_positiva': Nombre de la restricción en la BD
+
+¿POR QUÉ ESTA RESTRICCIÓN?
+- PositiveIntegerField ya evita negativos
+- Pero esta restricción es una capa extra de seguridad
+- La base de datos misma rechazará valores <= 0
+- Incluso si alguien modifica la BD directamente
+
+================================================================================
+8. CONCEPTOS AVANZADOS
+================================================================================
+
+8.1 RELATED_NAME
+-----------------
+El related_name permite acceder a objetos relacionados desde el modelo "padre".
+
+EJEMPLO:
+    # En LineaPedido
+    pedido = models.ForeignKey(Pedido, related_name='lineas')
+    
+    # Desde un Pedido, puedes hacer:
+    pedido.lineas.all()  # Todas las líneas de este pedido
+    pedido.lineas.count()  # Número de líneas
+    pedido.lineas.filter(cantidad__gt=1)  # Líneas con cantidad > 1
+
+SIN related_name:
+    # Django crea uno automático: lineapedido_set
+    pedido.lineapedido_set.all()  # Más largo y menos claro
+
+CON related_name='lineas':
+    pedido.lineas.all()  # Más claro y legible
+
+8.2 LOOKUPS DE DJANGO (__gt, __contains, etc.)
+------------------------------------------------
+Los lookups permiten hacer consultas complejas.
+
+EJEMPLOS:
+    # Mayor que
+    LineaPedido.objects.filter(cantidad__gt=1)  # cantidad > 1
+    
+    # Contiene (para strings)
+    Producto.objects.filter(nombre__contains='Laptop')  # nombre contiene "Laptop"
+    
+    # Acceder a campos relacionados
+    Pedido.objects.filter(cliente__razon_social__contains='ABC')
+    # Busca pedidos cuyo cliente tiene "ABC" en la razón social
+    
+    # Doble guion bajo (__) navega por relaciones
+    # cliente__razon_social significa:
+    #   1. Accede al cliente (ForeignKey)
+    #   2. Accede a razon_social (campo del Cliente)
+
+8.3 SNAPSHOT PATTERN (Patrón de Instantánea)
+-----------------------------------------------
+Guardamos datos "congelados" en el momento de la transacción.
+
+EJEMPLO EN Pedido:
+    direccion_envio = models.CharField(...)
+    # Aunque el Cliente tenga dirección, guardamos la dirección aquí
+
+¿POR QUÉ?
+- La dirección del cliente puede cambiar
+- Pero queremos saber a dónde se envió ESTE pedido específico
+- Es un registro histórico
+
+EJEMPLO EN LineaPedido:
+    precio_unitario = models.DecimalField(...)
+    # Aunque el Producto tenga precio, guardamos el precio aquí
+
+¿POR QUÉ?
+- El precio del producto puede cambiar
+- Pero queremos saber cuánto costaba cuando se hizo ESTE pedido
+- Es importante para facturación e historial
+
+8.4 DECORADORES
+---------------
+Los decoradores modifican el comportamiento de funciones/métodos.
+
+@property:
+    @property
+    def total(self):
+        return ...
+    
+    # Permite llamar pedido.total en lugar de pedido.total()
+
+@staticmethod (no usado aquí, pero útil saber):
+    @staticmethod
+    def calcular_iva(precio, porcentaje):
+        return precio * (porcentaje / 100)
+    
+    # Método que no necesita acceso a self
+    # Se llama: Producto.calcular_iva(100, 21)
+
+================================================================================
+9. RESUMEN DE COMANDOS IMPORTANTES
+================================================================================
+
+CREAR PROYECTO:
+    django-admin startproject nombre_proyecto .
+
+CREAR APP:
+    python manage.py startapp nombre_app
+
+CREAR MIGRACIONES:
+    python manage.py makemigrations
+
+APLICAR MIGRACIONES:
+    python manage.py migrate
+
+CREAR SUPERUSUARIO:
+    python manage.py createsuperuser
+
+EJECUTAR SERVIDOR:
+    python manage.py runserver
+
+VERIFICAR CONFIGURACIÓN:
+    python manage.py check
+
+SHELL DE DJANGO (para probar código):
+    python manage.py shell
+
+================================================================================
+10. FLUJO DE TRABAJO TÍPICO
+================================================================================
+
+1. CREAR/EDITAR MODELOS
+   - Edita models.py
+   - Define campos, relaciones, métodos
+
+2. CREAR MIGRACIONES
+   python manage.py makemigrations
+   - Django detecta cambios
+   - Crea archivos de migración
+
+3. APLICAR MIGRACIONES
+   python manage.py migrate
+   - Modifica la base de datos
+   - Crea/modifica tablas
+
+4. REGISTRAR EN ADMIN (opcional)
+   - Edita admin.py
+   - Registra modelos
+   - Configura la interfaz
+
+5. PROBAR
+   python manage.py runserver
+   - Abre http://localhost:8000/admin
+   - Crea datos de prueba
+   - Verifica que todo funciona
+
+================================================================================
+FIN DEL DOCUMENTO
+================================================================================
+
+Este documento explica cada aspecto del proyecto MiniERP. Si tienes dudas
+sobre algún concepto específico, busca la sección correspondiente y lee
+la explicación detallada.
+
+¡Buena suerte con tu aprendizaje de Django!

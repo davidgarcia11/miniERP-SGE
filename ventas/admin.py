@@ -11,7 +11,7 @@ class LineaPedidoInline(admin.TabularInline):
 class PedidoAdmin(admin.ModelAdmin):
     list_display = ('id', 'cliente', 'fecha_creacion', 'estado', 'total_calculado')
     list_filter = ('estado', 'fecha_creacion')
-    search_fields = ('cliente__nombre', 'id')
+    search_fields = ('cliente__razon_social', 'id')
     inlines = [LineaPedidoInline] # Esto mete las líneas dentro del pedido
 
     def total_calculado(self, obj):
@@ -21,5 +21,14 @@ class PedidoAdmin(admin.ModelAdmin):
 # Registramos Pedido con su configuración avanzada
 admin.site.register(Pedido, PedidoAdmin)
 
-# (Opcional) Si no quieres ver 'Lineas de Pedido' sueltas en el menú, borra la siguiente línea:
-admin.site.register(LineaPedido)
+# Configuración para LineaPedido como modelo independiente
+class LineaPedidoAdmin(admin.ModelAdmin):
+    list_display = ('id', 'pedido', 'producto', 'cantidad', 'precio_unitario', 'descuento', 'subtotal_calculado')
+    list_filter = ('pedido__estado', 'producto')
+    search_fields = ('pedido__id', 'producto__nombre', 'producto__sku')
+    
+    def subtotal_calculado(self, obj):
+        return f"{obj.subtotal:.2f} €"
+    subtotal_calculado.short_description = "Subtotal"
+
+admin.site.register(LineaPedido, LineaPedidoAdmin)
